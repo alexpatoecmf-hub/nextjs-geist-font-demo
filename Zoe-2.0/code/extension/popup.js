@@ -46,49 +46,21 @@
   }
 
   function enviarComandoPorVoz(texto) {
-    const t = texto.toLowerCase();
-    let comando = null;
+    if (!texto) {
+      status.textContent = "Nenhum comando de voz detectado.";
+      return;
+    }
 
-    const abrirMatch = t.match(/abrir\s+([a-z0-9.-]+(?:\.[a-z]{2,})?\/?)/);
-    if (abrirMatch) {
-      let url = abrirMatch[1];
-      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-      comando = { action: 'navigate', url: url };
-    } else if (t.includes('navegar para') || t.includes('vai para')) {
-      const partes = t.split(/navegar para|vai para/i);
-      const dominio = partes[partes.length - 1].trim();
-      if (dominio) {
-        let url = dominio;
-        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-        comando = { action: 'navigate', url: url };
+    // Envia o texto bruto para o host nativo, que usará a IA para interpretá-lo.
+    status.textContent = "Enviando para a IA da Zoe...";
+    chrome.runtime.sendMessage({ toHost: { text: texto } }, (resp) => {
+      // O host nativo pode enviar uma resposta de status, mas a ação principal
+      // será um novo comando enviado para o content_script.
+      // A UI aqui não precisa fazer mais nada.
+      if (resp && resp.status === 'host_indisponivel') {
+          status.textContent = "Erro: Host nativo da Zoe não está conectado.";
       }
-    }
-
-    if (!comando && (t.includes('rolar para baixo') || t.includes('rolar para baixo'))) {
-      comando = { action: 'scroll', direction: 'down' };
-    } else if (!comando && t.includes('rolar para cima')) {
-      comando = { action: 'scroll', direction: 'up' };
-    }
-
-    if (!comando && t.startsWith('clicar')) {
-      const parts = t.split('clicar');
-      const seletor = (parts[1] || '').trim();
-      if (seletor) {
-        comando = { action: 'click', selector_type: 'text', selector_value: seletor };
-      }
-    }
-
-    if (!comando && t.includes('abrir domínio frequente')) {
-      comando = { action: 'proactive_suggestion' };
-    }
-
-    if (comando) {
-      chrome.runtime.sendMessage({ toHost: comando }, (resp) => {
-        status.textContent = resp && resp.status ? `Status: ${resp.status}` : 'Comando enviado';
-      });
-    } else {
-      status.textContent = "Comando não reconhecido. Ex.: abrir youtube.com, rolar para baixo, clicar Docs";
-    }
+    });
   }
 
   btn.addEventListener('click', () => {

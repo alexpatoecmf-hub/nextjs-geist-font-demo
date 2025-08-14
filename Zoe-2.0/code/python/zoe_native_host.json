@@ -1,0 +1,9 @@
+{
+  "name": "com.zoe.native_host",
+  "description": "Zoé Native Messaging Host",
+  "path": "zoe_native_host_wrapper.sh",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://SEU_ID_DA_EXTENSAO_AQUI/"
+  ]
+}
